@@ -51,12 +51,24 @@ func (s *Server) Submit(receipt Receipt) (string, error) {
 	if err := validateReceipt(receipt); err != nil {
 		return "", err
 	}
-	// TODO handle duplicate receipts
-	id := generateID()
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.receiptPoints[id] = calcPoints(receipt)
-	return id, nil
+	var id string
+	var points = calcPoints(receipt)
+	for attempts := 0; attempts < 3; attempts++ {
+		id = generateID()
+
+		s.lock.Lock()
+		if _, exists := s.receiptPoints[id]; !exists {
+			s.receiptPoints[id] = points
+			s.lock.Unlock()
+			return id, nil // Unique ID found, return with success
+		}
+		s.lock.Unlock()
+
+		// Retry if ID was a duplicate
+		time.Sleep(time.Millisecond * 100)
+	}
+
+	return "", errors.New("failed to generate a unique ID after 3 attempts")
 }
 
 func (s *Server) GetPoints(id string) (int64, bool) {
