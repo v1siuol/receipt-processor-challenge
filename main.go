@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +12,8 @@ var server *Server
 func setupRouter() *gin.Engine {
 	router := gin.Default()
 
-	router.POST("/receipt/process", receiptPOST)
-	router.GET("/receipt/:id/points", receiptGET)
+	router.POST("/receipts/process", receiptPOST)
+	router.GET("/receipts/:id/points", receiptGET)
 
 	return router
 }
@@ -21,12 +22,14 @@ func setupRouter() *gin.Engine {
 func receiptPOST(c *gin.Context) {
 	var receipt Receipt
 	if err := c.BindJSON(&receipt); err != nil {
+		fmt.Println("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "The receipt is invalid"})
 		return
 	}
 
 	id, err := server.Submit(receipt)
 	if err != nil {
+		fmt.Println("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "The receipt is invalid"})
 		return
 	}

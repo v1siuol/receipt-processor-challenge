@@ -2,7 +2,10 @@ package main
 
 import (
 	"errors"
+	"math"
 	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,6 +51,7 @@ func (s *Server) Submit(receipt Receipt) (string, error) {
 	if err := validateReceipt(receipt); err != nil {
 		return "", err
 	}
+	// TODO handle duplicate receipts
 	id := generateID()
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -67,17 +71,70 @@ func generateID() string {
 }
 
 func calcPoints(receipt Receipt) int64 {
-	// TODO
 	var points int64
-	// for _, item := range receipt.Items {
-	// 	points += int64(item.Price)
-	// }
+
+	// 1 point for every alphanumeric character in the retailer name
+	alphaNumericRegex := regexp.MustCompile(`[a-zA-Z0-9]`)
+	points += int64(len(alphaNumericRegex.FindAllString(receipt.Retailer, -1)))
+
+	// 50 points if the total is a round dollar amount with no cents
+	if isRoundDollarAmount(receipt.Total) {
+		points += 50
+	}
+
+	// 25 points if the total is a multiple of 0.25
+	if isMultipleOfQuarter(receipt.Total) {
+		points += 25
+	}
+
+	// 5 points for every two items on the receipt
+	points += int64(len(receipt.Items) / 2 * 5)
+
+	// If the trimmed length of the item description is a multiple of 3,
+	// multiply the price by 0.2 and round up to the nearest integer
+	for _, item := range receipt.Items {
+		if len(strings.TrimSpace(item.ShortDescription))%3 == 0 {
+			price, _ := strconv.ParseFloat(item.Price, 64)
+			points += int64(math.Ceil(price * 0.2))
+		}
+	}
+
+	// 6 points if the day in the purchase date is odd
+	if isOddDay(receipt.PurchaseDate) {
+		points += 6
+	}
+
+	// 10 points if the time of purchase is after 2:00pm and before 4:00pm
+	if isBetweenTwoAndFour(receipt.PurchaseTime) {
+		points += 10
+	}
+
 	return points
 }
 
+func isRoundDollarAmount(total string) bool {
+	amount, _ := strconv.ParseFloat(total, 64)
+	return amount == math.Floor(amount)
+}
+
+func isMultipleOfQuarter(total string) bool {
+	amount, _ := strconv.ParseFloat(total, 64)
+	return math.Mod(amount*100, 25) == 0
+}
+
+func isOddDay(date string) bool {
+	t, _ := time.Parse("2006-01-02", date)
+	return t.Day()%2 != 0
+}
+
+func isBetweenTwoAndFour(timeStr string) bool {
+	t, _ := time.Parse("15:04", timeStr)
+	return t.Hour() >= 14 && t.Hour() < 16
+}
+
 func validateReceipt(r Receipt) error {
-	// Validate retailer (non-empty, matches pattern)
-	if matched, _ := regexp.MatchString(`^\S+$`, r.Retailer); !matched {
+	// Validate retailer (non-empty, matches pattern).
+	if matched, _ := regexp.MatchString(`^(\s*\S+\s*)+$`, r.Retailer); !matched {
 		return errors.New("invalid retailer")
 	}
 
