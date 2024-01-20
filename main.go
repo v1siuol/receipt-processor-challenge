@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,14 +22,14 @@ func setupRouter() *gin.Engine {
 func receiptPOST(c *gin.Context) {
 	var receipt Receipt
 	if err := c.BindJSON(&receipt); err != nil {
-		fmt.Println("error", err.Error())
+		log.Println("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "The receipt is invalid"})
 		return
 	}
 
 	id, err := server.Submit(receipt)
 	if err != nil {
-		fmt.Println("error", err.Error())
+		log.Println("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "The receipt is invalid"})
 		return
 	}
@@ -50,9 +50,5 @@ func main() {
 	server = NewServer()
 	router := setupRouter()
 	// Listen and Server in 0.0.0.0:8080
-	// TODO support port for config
-	// TODO docs
-	// TODO GitHub Actions
-	// TODO tests
 	router.Run(":8080")
 }

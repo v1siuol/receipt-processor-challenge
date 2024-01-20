@@ -91,6 +91,53 @@ func TestMnM(t *testing.T) {
 	})
 }
 
+func TestMorning(t *testing.T) {
+	server = NewServer()
+	router := setupRouter()
+
+	test := testCase{
+		name: "morning-receipt",
+		input: []byte(`{
+			"retailer": "Walgreens",
+			"purchaseDate": "2022-01-02",
+			"purchaseTime": "08:13",
+			"total": "2.65",
+			"items": [
+				{"shortDescription": "Pepsi - 12-oz", "price": "1.25"},
+				{"shortDescription": "Dasani", "price": "1.40"}
+			]
+		}`),
+		expectedPoints: 15,
+	}
+
+	t.Run(test.name, func(t *testing.T) {
+		testReceiptProcessing(t, router, test.input, test.expectedPoints)
+	})
+}
+
+func TestSimple(t *testing.T) {
+	server = NewServer()
+	router := setupRouter()
+
+	test := testCase{
+		name: "simple-receipt",
+		input: []byte(`{
+			"retailer": "Target",
+			"purchaseDate": "2022-01-02",
+			"purchaseTime": "13:13",
+			"total": "1.25",
+			"items": [
+				{"shortDescription": "Pepsi - 12-oz", "price": "1.25"}
+			]
+		}`),
+		expectedPoints: 31,
+	}
+
+	t.Run(test.name, func(t *testing.T) {
+		testReceiptProcessing(t, router, test.input, test.expectedPoints)
+	})
+}
+
 func testReceiptProcessing(t testing.TB, router *gin.Engine, input []byte, expectedPoints int64) {
 	// 1. Submit receipt
 	req, _ := http.NewRequest("POST", "/receipts/process", bytes.NewBuffer(input))

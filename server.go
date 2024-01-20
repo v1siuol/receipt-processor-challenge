@@ -38,7 +38,6 @@ type Server struct {
 	receiptPoints map[string]int64 // stored in-memory mapping of receipt IDs to points
 }
 
-// input port?
 func NewServer() *Server {
 	server := &Server{
 		receiptPoints: make(map[string]int64),
@@ -47,6 +46,7 @@ func NewServer() *Server {
 	return server
 }
 
+// Process the given receipt and stores its points value.
 func (s *Server) Submit(receipt Receipt) (string, error) {
 	if err := validateReceipt(receipt); err != nil {
 		return "", err
@@ -71,6 +71,7 @@ func (s *Server) Submit(receipt Receipt) (string, error) {
 	return "", errors.New("failed to generate a unique ID after 3 attempts")
 }
 
+// Retrieve the points value associated with a given receipt ID.
 func (s *Server) GetPoints(id string) (int64, bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -82,6 +83,7 @@ func generateID() string {
 	return uuid.New().String()
 }
 
+// consider mapping rules to points, more extensible and configurable
 func calcPoints(receipt Receipt) int64 {
 	var points int64
 

@@ -8,10 +8,16 @@ Provide any instructions required to run your application.
 
 Data does not need to persist when your application stops. It is sufficient to store information in memory. There are too many different database solutions, we will not be installing a database on our system when testing your application.
 
-## Quick Start
+## !!Quick Start
 
 ```bash
+# Install dependencies
+go get .
+# Run dev server
 go run .
+# Run tests
+go test
+go test -race
 ```
 
 ## Language Selection
